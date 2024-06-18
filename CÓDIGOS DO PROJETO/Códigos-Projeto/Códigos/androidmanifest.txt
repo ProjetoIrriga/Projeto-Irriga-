@@ -1,0 +1,153 @@
+package com.projetoirriga
+
+import android.Manifest
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
+import android.content.pm.PackageManager
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import com.tarcisio.projetoirriga.ui.theme.ProjetoIrrigaTheme
+import java.io.OutputStream
+import java.util.*
+
+class MainActivity : AppCompatActivity() {
+    private var bluetoothAdapter: BluetoothAdapter? = null
+    private var bluetoothSocket: BluetoothSocket? = null
+    private lateinit var outputStream: OutputStream
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            ProjetoIrrigaTheme {
+                PumpControl()
+            }
+        }
+
+        // Initialize Bluetooth adapter
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+
+        // Get a list of paired devices
+        val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
+
+        // Check if there are paired devices
+        if (!pairedDevices.isNullOrEmpty()) {
+            // Loop through paired devices
+            for (device in pairedDevices) {
+                // Check if the device name matches your HC-05
+                if (device.name == "HC-05") {
+                    // Attempt to connect to the device
+                    try {
+                        if (ActivityCompat.checkSelfPermission(
+                                this,
+                                Manifest.permission.BLUETOOTH_CONNECT
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            // TODO: Consider calling
+                            //    ActivityCompat#requestPermissions
+                            // here to request the missing permissions, and then overriding
+                            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                            //                                          int[] grantResults)
+                            // to handle the case where the user grants the permission. See the documentation
+                            // for ActivityCompat#requestPermissions for more details.
+                            return
+                        }
+                        bluetoothSocket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
+                        bluetoothSocket?.connect()
+                        outputStream = bluetoothSocket?.outputStream!!
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                    break
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun PumpControl() {
+        var isPumpOn by remember { mutableStateOf(false) }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF0A0A0A))
+                .width(360.dp)
+                .height(733.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Controle da Bomba Hidráulica",
+                    fontSize = 20.sp,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                Button(
+                    onClick = {
+                        isPumpOn = !isPumpOn
+                        val command = if (isPumpOn) '1' else '0'
+                        try {
+                            outputStream.write(command.toInt()) // Envie o comando para ligar ou desligar a bomba
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    },
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .width(200.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = if (isPumpOn) Color.Red else Color.Green
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    ButtonContent(isPumpOn)
+                }
+
+                Text(
+                    text = if (isPumpOn) "A bomba está ligada" else "A bomba está desligada",
+                    fontSize = 16.sp,
+                    color = Color.White,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun ButtonContent(isPumpOn: Boolean) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (isPumpOn) "Desligar Bomba" else "Ligar Bomba",
+                fontSize = 16.sp,
+                color = Color.White
+            )
+        }
+    }
+}
+
+main original

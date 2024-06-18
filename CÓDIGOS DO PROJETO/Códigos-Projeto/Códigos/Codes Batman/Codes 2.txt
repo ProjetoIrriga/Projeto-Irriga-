@@ -1,0 +1,18 @@
+@Composable
+fun GradientButton(
+    onClick: () -> Unit
+){
+    Button(
+        onClick,
+        modifier = Modifier.fillMaxWidth().padding(20.dp)
+    )
+    {
+
+    }
+}
+
+@Composable
+@Preview
+private fun GradientButtonPreview(){
+    GradientButton(onClick = {})
+}

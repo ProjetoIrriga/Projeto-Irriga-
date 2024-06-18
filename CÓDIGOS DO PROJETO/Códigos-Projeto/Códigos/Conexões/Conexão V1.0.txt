@@ -1,0 +1,86 @@
+Para conectar o código do Arduino com o código do Android Studio usando Jetpack Compose, você precisará configurar a comunicação entre o aplicativo Android e o Arduino. Existem várias maneiras de fazer isso, mas uma abordagem comum é usar a comunicação serial via USB ou Bluetooth.
+
+Aqui está um exemplo básico de como você pode configurar a comunicação serial via USB entre o Arduino e o aplicativo Android:
+
+No código do Arduino, você usaria a biblioteca Serial para ler os comandos enviados pelo aplicativo Android através da porta serial USB. O código do Arduino permanece essencialmente o mesmo do exemplo anterior.
+No aplicativo Android, você usaria a API Android USB Host para estabelecer uma conexão USB com o Arduino e enviar comandos serialmente.
+Aqui está um exemplo simplificado do lado do Android usando Kotlin e Jetpack Compose:
+
+kotlin
+Copy code
+import android.hardware.usb.*
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
+import androidx.compose.material.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+
+class MainActivity : ComponentActivity() {
+    private var usbManager: UsbManager? = null
+    private var usbDevice: UsbDevice? = null
+    private var usbConnection: UsbDeviceConnection? = null
+    private var usbInterface: UsbInterface? = null
+    private var usbEndpoint: UsbEndpoint? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            val context = LocalContext.current
+
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Button(onClick = { sendCommandToDevice("1") }) {
+                    Text("Ligar Bomba")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(onClick = { sendCommandToDevice("0") }) {
+                    Text("Desligar Bomba")
+                }
+            }
+        }
+
+        usbManager = getSystemService(Context.USB_SERVICE) as UsbManager?
+        val usbDevices: HashMap<String, UsbDevice>? = usbManager?.deviceList
+
+        if (!usbDevices.isNullOrEmpty()) {
+            usbDevices.values.forEach { device ->
+                if (device.vendorId == YOUR_ARDUINO_VENDOR_ID && device.productId == YOUR_ARDUINO_PRODUCT_ID) {
+                    usbDevice = device
+                    setupUsbConnection()
+                    return@forEach
+                }
+            }
+        }
+    }
+
+    private fun setupUsbConnection() {
+        usbInterface = usbDevice?.getInterface(0)
+        usbEndpoint = usbInterface?.getEndpoint(0)
+        usbConnection = usbManager?.openDevice(usbDevice)
+        usbConnection?.claimInterface(usbInterface, true)
+    }
+
+    private fun sendCommandToDevice(command: String) {
+        usbConnection?.bulkTransfer(usbEndpoint, command.toByteArray(), command.length, TIMEOUT_MS)
+    }
+
+    companion object {
+        const val YOUR_ARDUINO_VENDOR_ID = 0x2341 // Example Arduino Vendor ID
+        const val YOUR_ARDUINO_PRODUCT_ID = 0x0043 // Example Arduino Product ID
+        const val TIMEOUT_MS = 1000
+    }
+}
+Este é um exemplo básico que mostra como você pode criar um aplicativo Android usando Jetpack Compose e enviar comandos para o Arduino através da comunicação USB. Certifique-se de substituir YOUR_ARDUINO_VENDOR_ID e YOUR_ARDUINO_PRODUCT_ID pelos IDs do seu Arduino. Além disso, este código precisa de permissões adequadas no arquivo AndroidManifest.xml para acessar dispositivos USB.
+
+Lembre-se de que este é apenas um exemplo básico. Dependendo da complexidade do seu projeto e dos requisitos específicos, você pode precisar de uma implementação mais robusta, especialmente no lado do Arduino para lidar com a comunicação serial de forma mais confiável e segura.

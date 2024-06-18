@@ -1,0 +1,19 @@
+#include <SoftwareSerial.h>
+
+SoftwareSerial bluetooth(2, 3); // RX, TX
+
+void setup() {
+  Serial.begin(9600); // Inicia a comunicação serial com o computador
+  bluetooth.begin(38400); // Inicia a comunicação serial com o módulo Bluetooth
+}
+
+void loop() {
+  if (bluetooth.available()) {
+    char c = bluetooth.read(); // Lê o caractere recebido do Bluetooth
+    Serial.print(c); // Envia o caractere para o monitor serial
+  }
+  if (Serial.available()) {
+    char c = Serial.read(); // Lê o caractere recebido do computador
+    bluetooth.print(c); // Envia o caractere para o módulo Bluetooth
+  }
+}

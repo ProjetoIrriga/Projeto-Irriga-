@@ -1,0 +1,30 @@
+// Define o pino que será conectado ao relé
+const int relayPin = 10;
+
+void setup() {
+  // Inicializa o pino do relé como saída
+  pinMode(relayPin, OUTPUT);
+  // Desliga o relé inicialmente
+  digitalWrite(relayPin, LOW);
+
+  // Inicializa a comunicação serial para debug (opcional)
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Aguarda um comando da porta serial
+  if (Serial.available() > 0) {
+    char command = Serial.read();
+
+    // Verifica o comando recebido
+    if (command == '1') {
+      // Liga a bomba hidráulica
+      digitalWrite(relayPin, HIGH);
+      Serial.println("Bomba ligada");
+    } else if (command == '0') {
+      // Desliga a bomba hidráulica
+      digitalWrite(relayPin, LOW);
+      Serial.println("Bomba desligada");
+    }
+  }
+}

@@ -1,0 +1,71 @@
+Para adicionar controle de um LED usando Arduino ao seu aplicativo Android, você precisa estabelecer uma conexão entre o dispositivo Android e o Arduino, geralmente via Bluetooth, Wi-Fi ou USB. Vou assumir que você deseja usar Bluetooth. Aqui está um exemplo básico de como você pode fazer isso:
+
+No lado do Arduino, você precisa de um código para ler os comandos recebidos do dispositivo Android e controlar o LED de acordo. Vou fornecer um exemplo simples:
+arduino
+Copiar código
+int ledPin = 13; // O LED está conectado ao pino 13
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(9600); // Inicializa a comunicação serial
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    char command = Serial.read(); // Lê o comando recebido
+    if (command == '1') {
+      digitalWrite(ledPin, HIGH); // Liga o LED
+    } else if (command == '0') {
+      digitalWrite(ledPin, LOW); // Desliga o LED
+    }
+  }
+}
+No lado do aplicativo Android, você precisa adicionar a funcionalidade de se comunicar com o Arduino por Bluetooth e enviar os comandos para ligar ou desligar o LED. Aqui está um exemplo simplificado de como você pode fazer isso:
+kotlin
+Copiar código
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
+import java.io.OutputStream
+import java.util.*
+
+// Dentro da classe MainActivity
+private var bluetoothAdapter: BluetoothAdapter? = null
+private var bluetoothSocket: BluetoothSocket? = null
+private lateinit var outputStream: OutputStream
+
+// Dentro do método onCreate()
+bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+val device: BluetoothDevice? = bluetoothAdapter?.getRemoteDevice("endereço MAC do Arduino")
+
+// Tente se conectar ao dispositivo Bluetooth
+try {
+    bluetoothSocket = device?.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
+    bluetoothSocket?.connect()
+    outputStream = bluetoothSocket?.outputStream!!
+} catch (e: Exception) {
+    e.printStackTrace()
+}
+
+// Dentro do método PumpControl(), substitua a linha que alterna o estado da bomba por isso
+Button(
+    onClick = {
+        isPumpOn = !isPumpOn
+        val command = if (isPumpOn) '1' else '0'
+        try {
+            outputStream.write(command.toInt()) // Envie o comando para ligar ou desligar o LED
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    },
+    modifier = Modifier
+        .padding(vertical = 8.dp)
+        .width(200.dp),
+    colors = ButtonDefaults.buttonColors(
+        backgroundColor = if (isPumpOn) Color.Red else Color.Green
+    ),
+    shape = RoundedCornerShape(8.dp)
+) {
+    ButtonContent(isPumpOn)
+}
+Lembre-se de substituir "endereço MAC do Arduino" pelo endereço MAC do seu Arduino e ajustar conforme necessário. Certifique-se também de adicionar as permissões Bluetooth ao seu manifesto Android.
